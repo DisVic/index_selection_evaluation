@@ -40,7 +40,7 @@ echo PostgreSQL готов!
 
 echo === 3. Схема Kimball (Базовая) ===
 echo Создание DDL структуры Kimball...
-docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/tpcds.sql
+docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% < tpcds-kit\tools\tpcds.sql
 echo Загрузка 1.3 ГБ сырых данных...
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/load_data.sql
 echo Оригинальная схема Kimball готова.

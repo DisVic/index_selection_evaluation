@@ -54,7 +54,7 @@ wait_for_pg
 
 echo "=== 3. Схема Kimball (Базовая) ==="
 echo "Создание DDL структуры Kimball..."
-run_sql //sql/tpcds.sql
+docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME < tpcds-kit/tools/tpcds.sql
 echo "Загрузка 1.3 ГБ сырых данных..."
 run_sql //sql/load_data.sql
 echo "Оригинальная схема Kimball готова."
