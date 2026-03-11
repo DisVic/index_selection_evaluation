@@ -73,16 +73,20 @@ class DexterAlgorithm(SelectionAlgorithm):
                 f.write(query_text)
             
             # Build dexter command with connection parameters
-            # Use environment variable for password to avoid exposing in command line
+            # Use environment variables for password and search_path
             env = os.environ.copy()
             env["PGPASSWORD"] = "tpcds_password"
+            env["PGOPTIONS"] = f"-c search_path={search_path}"
             
             command = (
                 f'dexter -h localhost -p 5432 -U tpcds -d {database_name}'
-                # f' --min-cost-savings-pct {min_percentage}'
-                # f' --options "-c search_path={search_path}"'
-                # f' .dexter_query.sql'
+                f' --min-cost-savings-pct {min_percentage}'
+                f' .dexter_query.sql'
             )
+            
+            logging.debug(f"Running dexter command: {command}")
+            logging.debug(f"PGOPTIONS: {env.get('PGOPTIONS', 'not set')}")
+            
             self.database_connector.commit()
             p = subprocess.Popen(
                 command,
