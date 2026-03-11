@@ -1,14 +1,19 @@
 #!/bin/bash
 # deploy.sh - Скрипт автоматизированного развертывания БД TPC-DS
 # Поддерживает Kimball, Inmon и Data Vault
+# Все SQL команды выполняются ИЗНУТРИ контейнера Docker для избежания проблем с правами доступа.
 
 set -e
 
-DB_HOST="localhost"
+CONTAINER="tpcds_postgres"
 DB_USER="tpcds"
 DB_NAME="tpcds"
-# Предполагается, что переменная PGPASSWORD уже задана, либо пароль сохранен в .pgpass
-export PGPASSWORD="tpcds_password"
+
+# Функция для выполнения SQL файла внутри контейнера
+run_sql() {
+    echo "  -> Выполняю $1 ..."
+    docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME -f "$1"
+}
 
 echo "=== 0. Распаковка данных ==="
 if [ ! -d "tpcds_data_1" ]; then
@@ -19,6 +24,7 @@ if [ ! -d "tpcds_data_1" ]; then
         7za x tpcds_data_1.zip -o.
     else
         echo "[ВНИМАНИЕ] Утилита 7z не найдена. Установите p7zip-full/p7zip или распакуйте архив вручную."
+        exit 1
     fi
 else
     echo "Папка tpcds_data_1 уже существует, пропуск распаковки."
@@ -26,31 +32,23 @@ fi
 
 echo "=== 1. Запуск инфраструктуры PostgreSQL ==="
 docker-compose up -d
-echo "Ожидание старта базы данных..."
-sleep 5
+echo "Ожидание старта базы данных (15 сек)..."
+sleep 15
 
 echo "=== 2. Схема Kimball (Базовая) ==="
-echo "Создание DDL структуры Kimball..."
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f tpcds-kit/tools/tpcds.sql
-
-echo "Загрузка 1.3 ГБ сырых данных (load_data.sql)..."
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f load_data.sql
-echo "Оригинальная схема готова."
+echo "DDL Kimball создается автоматически через docker-entrypoint-initdb.d"
+echo "Загрузка 1.3 ГБ сырых данных..."
+run_sql /sql/load_data.sql
+echo "Оригинальная схема Kimball готова."
 
 echo "=== 3. Схема Inmon (3NF) ==="
-echo "Выполнение Inmon DDL..."
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f create_inmon_ddl.sql
-
-echo "Трансформация ELT Kimball -> Inmon..."
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f create_inmon_etl.sql
+run_sql /sql/create_inmon_ddl.sql
+run_sql /sql/create_inmon_etl.sql
 echo "Схема Inmon 3NF загружена."
 
 echo "=== 4. Схема Data Vault 2.0 ==="
-echo "Выполнение Data Vault DDL..."
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f dv_ddl.sql
-
-echo "Трансформация ELT с JSONB Сателлитами..."
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f dv_etl.sql
+run_sql /sql/dv_ddl.sql
+run_sql /sql/dv_etl.sql
 echo "Схема Data Vault загружена."
 
 echo "=== Все схемы и данные успешно развернуты! ==="

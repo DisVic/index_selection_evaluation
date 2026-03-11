@@ -12,3 +12,8 @@ services:
     volumes:
       - ./tpcds_data_1:/data
       - ./tpcds-kit/tools/tpcds.sql:/docker-entrypoint-initdb.d/1_tpcds.sql
+      - ./load_data.sql:/sql/load_data.sql
+      - ./create_inmon_ddl.sql:/sql/create_inmon_ddl.sql
+      - ./create_inmon_etl.sql:/sql/create_inmon_etl.sql
+      - ./dv_ddl.sql:/sql/dv_ddl.sql
+      - ./dv_etl.sql:/sql/dv_etl.sql
