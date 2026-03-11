@@ -25,11 +25,19 @@ if not exist "tpcds_data_1\" (
 
 echo === 1. Запуск инфраструктуры PostgreSQL ===
 docker-compose up -d
-echo Ожидание старта базы данных (15 сек)...
-timeout /t 15 /nobreak > NUL
+echo Ожидание готовности PostgreSQL...
+:WAIT_PG
+docker exec %CONTAINER% pg_isready -U %DB_USER% -d %DB_NAME% > NUL 2>&1
+if errorlevel 1 (
+    echo   Postgres еще не готов, ожидание...
+    timeout /t 2 /nobreak > NUL
+    goto WAIT_PG
+)
+echo PostgreSQL готов!
 
 echo === 2. Схема Kimball (Базовая) ===
-echo DDL Kimball создается автоматически через docker-entrypoint-initdb.d
+echo Создание DDL структуры Kimball...
+docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/tpcds.sql
 echo Загрузка 1.3 ГБ сырых данных...
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/load_data.sql
 echo Оригинальная схема Kimball готова.

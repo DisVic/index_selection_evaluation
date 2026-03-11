@@ -1,7 +1,7 @@
 #!/bin/bash
 # deploy.sh - Скрипт автоматизированного развертывания БД TPC-DS
 # Поддерживает Kimball, Inmon и Data Vault
-# Все SQL команды выполняются ИЗНУТРИ контейнера Docker для избежания проблем с правами доступа.
+# Все SQL команды выполняются ИЗНУТРИ контейнера Docker.
 
 set -e
 
@@ -13,6 +13,21 @@ DB_NAME="tpcds"
 run_sql() {
     echo "  -> Выполняю $1 ..."
     docker exec -i $CONTAINER psql -U $DB_USER -d $DB_NAME -f "$1"
+}
+
+# Ожидание готовности PostgreSQL
+wait_for_pg() {
+    echo "Ожидание готовности PostgreSQL..."
+    for i in $(seq 1 30); do
+        if docker exec $CONTAINER pg_isready -U $DB_USER -d $DB_NAME > /dev/null 2>&1; then
+            echo "PostgreSQL готов!"
+            return 0
+        fi
+        echo "  Попытка $i/30..."
+        sleep 2
+    done
+    echo "[ОШИБКА] PostgreSQL не стартовал за 60 секунд."
+    exit 1
 }
 
 echo "=== 0. Распаковка данных ==="
@@ -32,23 +47,23 @@ fi
 
 echo "=== 1. Запуск инфраструктуры PostgreSQL ==="
 docker-compose up -d
-echo "Ожидание старта базы данных (15 сек)..."
-sleep 15
+wait_for_pg
 
 echo "=== 2. Схема Kimball (Базовая) ==="
-echo "DDL Kimball создается автоматически через docker-entrypoint-initdb.d"
+echo "Создание DDL структуры Kimball..."
+run_sql //sql/tpcds.sql
 echo "Загрузка 1.3 ГБ сырых данных..."
-run_sql /sql/load_data.sql
+run_sql //sql/load_data.sql
 echo "Оригинальная схема Kimball готова."
 
 echo "=== 3. Схема Inmon (3NF) ==="
-run_sql /sql/create_inmon_ddl.sql
-run_sql /sql/create_inmon_etl.sql
+run_sql //sql/create_inmon_ddl.sql
+run_sql //sql/create_inmon_etl.sql
 echo "Схема Inmon 3NF загружена."
 
 echo "=== 4. Схема Data Vault 2.0 ==="
-run_sql /sql/dv_ddl.sql
-run_sql /sql/dv_etl.sql
+run_sql //sql/dv_ddl.sql
+run_sql //sql/dv_etl.sql
 echo "Схема Data Vault загружена."
 
 echo "=== Все схемы и данные успешно развернуты! ==="
