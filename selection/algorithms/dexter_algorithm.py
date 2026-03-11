@@ -27,9 +27,9 @@ class DexterAlgorithm(SelectionAlgorithm):
         """Determine search_path based on benchmark type."""
         if benchmark_name:
             if "inmon" in benchmark_name.lower():
-                return "tpcds_inmon, tpcds_dv, public"
+                return "tpcds_inmon,tpcds_dv,public"
             elif "datavault" in benchmark_name.lower() or "dv" in benchmark_name.lower():
-                return "tpcds_dv, tpcds_inmon, public"
+                return "tpcds_dv,tpcds_inmon,public"
         return "public"
 
     def _parse_index_output(self, output_string, query):

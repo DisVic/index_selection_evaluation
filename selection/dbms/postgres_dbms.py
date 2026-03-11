@@ -31,15 +31,15 @@ class PostgresDatabaseConnector(DatabaseConnector):
         # Set search_path based on benchmark type
         if self.benchmark_name:
             if "inmon" in self.benchmark_name.lower():
-                search_path = "tpcds_inmon, tpcds_dv, public"
+                search_path = "tpcds_inmon,tpcds_dv,public"
             elif "datavault" in self.benchmark_name.lower() or "dv" in self.benchmark_name.lower():
-                search_path = "tpcds_dv, tpcds_inmon, public"
+                search_path = "tpcds_dv,tpcds_inmon,public"
             else:
                 # Kimball and other workloads use the original public schema
                 search_path = "public"
         else:
             # Default fallback for backward compatibility
-            search_path = "tpcds_inmon, tpcds_dv, public"
+            search_path = "tpcds_inmon,tpcds_dv,public"
 
         self._cursor.execute("SET search_path TO {};".format(search_path))
 
