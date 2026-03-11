@@ -22,8 +22,15 @@ class WorkloadParser:
     def get_tables(self):
         assert self.database_system == "postgres"
         db_connector = PostgresDatabaseConnector(self.database_name)
+        if "inmon" in self.benchmark_name:
+            schema = "tpcds_inmon"
+        elif "datavault" in self.benchmark_name or "dv" in self.benchmark_name:
+            schema = "tpcds_dv"
+        else:
+            schema = "public"
+
         result = db_connector.exec_fetchall(
-            "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname='public';"
+            f"SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname='{schema}';"
         )
         table_names = [row[0] for row in result]
 
@@ -34,7 +41,7 @@ class WorkloadParser:
             result = db_connector.exec_fetchall(
                 "SELECT column_name "
                 + "FROM information_schema.columns "
-                + "WHERE table_schema = 'public' "
+                + f"WHERE table_schema = '{schema}' "
                 + f"AND table_name = '{table_name}';"
             )
             column_names = [row[0] for row in result]

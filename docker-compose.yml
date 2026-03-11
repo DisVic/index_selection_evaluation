@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    container_name: tpcds_postgres
+    environment:
+      POSTGRES_USER: tpcds
+      POSTGRES_PASSWORD: tpcds_password
+      POSTGRES_DB: tpcds
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./tpcds_data_1:/data
+      - ./tpcds-kit/tools/tpcds.sql:/docker-entrypoint-initdb.d/1_tpcds.sql

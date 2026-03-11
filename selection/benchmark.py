@@ -105,7 +105,7 @@ class Benchmark:
 
     def _store_results(self, results, plans):
         config = self.config
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         if not self.disable_output_files:
             self._write_query_plans(date, plans)
         commit_hash = self._git_hash()
@@ -139,8 +139,14 @@ class Benchmark:
             pickle.dump(self.indexes, file)
 
     def _write_query_plans(self, date, plans):
+        date = date.replace(":", "-").replace(" ", "_")
         with open(f"benchmark_results/plans/{date}.json", "w") as f:
             json.dump(plans, f)
+
+    def _write_costs(self, date, costs):
+        date = date.replace(":", "-").replace(" ", "_")
+        with open(f"benchmark_results/costs/{date}.json", "w") as f:
+            json.dump(costs, f)
 
     def _append_to_csv(self, entry):
         header = self._create_csv_header()

@@ -29,15 +29,14 @@ class DexterAlgorithm(SelectionAlgorithm):
         index_columns = []
 
         for query in workload.queries:
+            query_text = self.database_connector._prepare_query(query)
+            with open(".dexter_query.sql", "w", encoding="utf-8") as f:
+                f.write(query_text)
+            
             command = (
                 f"dexter {database_name}"
-                f' --min-cost-savings-pct {min_percentage} -s " '
+                f' --min-cost-savings-pct {min_percentage} .dexter_query.sql'
             )
-            # Prepare and cleaup query to create and drop view
-            # (e.g. TPC-H query 15)
-            # Commit because dexter tool creates another database connection
-            command += self.database_connector._prepare_query(query)
-            command += '"'
             self.database_connector.commit()
             p = subprocess.Popen(
                 command,
@@ -47,7 +46,7 @@ class DexterAlgorithm(SelectionAlgorithm):
                 shell=True,
             )
             with p.stdout:
-                output_string = p.stdout.read().decode("utf-8")
+                output_string = p.stdout.read().decode("utf-8", errors="ignore")
             p.wait()
             self.database_connector._cleanup_query(query)
             self.database_connector.commit()

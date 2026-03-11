@@ -23,9 +23,10 @@ class PostgresDatabaseConnector(DatabaseConnector):
     def create_connection(self):
         if self._connection:
             self.close()
-        self._connection = psycopg2.connect("dbname={}".format(self.db_name))
+        self._connection = psycopg2.connect("host=localhost port=5432 user=tpcds password=tpcds_password dbname={}".format(self.db_name))
         self._connection.autocommit = self.autocommit
         self._cursor = self._connection.cursor()
+        self._cursor.execute("SET search_path TO tpcds_inmon, tpcds_dv, public;")
 
     def enable_simulation(self):
         self.exec_only("create extension hypopg")
@@ -38,15 +39,22 @@ class PostgresDatabaseConnector(DatabaseConnector):
     # Updates query syntax to work in PostgreSQL
     def update_query_text(self, text):
         text = text.replace(";\nlimit ", " limit ").replace("limit -1", "")
+        text = text.replace("case when lochierarchy = 0", "case when (grouping(i_category)+grouping(i_class)) = 0")
         text = re.sub(r" ([0-9]+) days\)", r" interval '\1 days')", text)
         text = self._add_alias_subquery(text)
         return text
+
+    def _prepare_query(self, query):
+        parsed_query = super()._prepare_query(query)
+        if parsed_query:
+            return self.update_query_text(parsed_query)
+        return parsed_query
 
     # PostgreSQL requires an alias for subqueries
     def _add_alias_subquery(self, query_text):
         text = query_text.lower()
         positions = []
-        for match in re.finditer(r"((from)|,)[  \n]*\(", text):
+        for match in re.finditer(r"((from)|,)\s*\(", text):
             counter = 1
             pos = match.span()[1]
             while counter > 0:
@@ -56,8 +64,9 @@ class PostgresDatabaseConnector(DatabaseConnector):
                 elif char == ")":
                     counter -= 1
                 pos += 1
-            next_word = query_text[pos:].lstrip().split(" ")[0].split("\n")[0]
-            if next_word[0] in [")", ","] or next_word in [
+            next_word_raw = query_text[pos:].lstrip().split(" ")[0].split("\n")[0]
+            next_word_clean = next_word_raw.replace('\r', '').strip().lower()
+            if next_word_clean == "" or next_word_clean[0] in [")", ","] or next_word_clean in [
                 "limit",
                 "group",
                 "order",
@@ -143,7 +152,7 @@ class PostgresDatabaseConnector(DatabaseConnector):
         indexes = self.exec_fetch(stmt, one=False)
         for index in indexes:
             index_name = index[0]
-            drop_stmt = "drop index {}".format(index_name)
+            drop_stmt = "drop index {} cascade".format(index_name)
             logging.debug("Dropping index {}".format(index_name))
             self.exec_only(drop_stmt)
 
@@ -162,6 +171,7 @@ class PostgresDatabaseConnector(DatabaseConnector):
             result = plan["Actual Total Time"], plan
         except Exception as e:
             logging.error(f"{query.nr}, {e}")
+            logging.error(f"FAILED QUERY TEXT: {query_text}")
             self._connection.rollback()
             result = None, self._get_plan(query)
         # Disable timeout
@@ -187,7 +197,12 @@ class PostgresDatabaseConnector(DatabaseConnector):
     def _get_plan(self, query):
         query_text = self._prepare_query(query)
         statement = f"explain (format json) {query_text}"
-        query_plan = self.exec_fetch(statement)[0][0]["Plan"]
+        try:
+            query_plan = self.exec_fetch(statement)[0][0]["Plan"]
+        except Exception as e:
+            logging.error(f"[_get_plan] {query.nr}, {e}")
+            logging.error(f"[_get_plan] FAILED QUERY TEXT: {query_text}")
+            raise
         self._cleanup_query(query)
         return query_plan
 
