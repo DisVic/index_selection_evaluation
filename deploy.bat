@@ -23,7 +23,10 @@ if not exist "tpcds_data_1\" (
     echo Папка tpcds_data_1 уже существует, пропуск распаковки.
 )
 
-echo === 1. Запуск инфраструктуры PostgreSQL ===
+echo === 1. Инициализация подмодулей ===
+git submodule update --init --recursive
+
+echo === 2. Запуск инфраструктуры PostgreSQL ===
 docker-compose up -d
 echo Ожидание готовности PostgreSQL...
 :WAIT_PG
@@ -35,19 +38,19 @@ if errorlevel 1 (
 )
 echo PostgreSQL готов!
 
-echo === 2. Схема Kimball (Базовая) ===
+echo === 3. Схема Kimball (Базовая) ===
 echo Создание DDL структуры Kimball...
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/tpcds.sql
 echo Загрузка 1.3 ГБ сырых данных...
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/load_data.sql
 echo Оригинальная схема Kimball готова.
 
-echo === 3. Схема Inmon (3NF) ===
+echo === 4. Схема Inmon (3NF) ===
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/create_inmon_ddl.sql
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/create_inmon_etl.sql
 echo Схема Inmon 3NF загружена.
 
-echo === 4. Схема Data Vault 2.0 ===
+echo === 5. Схема Data Vault 2.0 ===
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/dv_ddl.sql
 docker exec -i %CONTAINER% psql -U %DB_USER% -d %DB_NAME% -f /sql/dv_etl.sql
 echo Схема Data Vault загружена.

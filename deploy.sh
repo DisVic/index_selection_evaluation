@@ -45,23 +45,26 @@ else
     echo "Папка tpcds_data_1 уже существует, пропуск распаковки."
 fi
 
-echo "=== 1. Запуск инфраструктуры PostgreSQL ==="
+echo "=== 1. Инициализация подмодулей ==="
+git submodule update --init --recursive
+
+echo "=== 2. Запуск инфраструктуры PostgreSQL ==="
 docker-compose up -d
 wait_for_pg
 
-echo "=== 2. Схема Kimball (Базовая) ==="
+echo "=== 3. Схема Kimball (Базовая) ==="
 echo "Создание DDL структуры Kimball..."
 run_sql //sql/tpcds.sql
 echo "Загрузка 1.3 ГБ сырых данных..."
 run_sql //sql/load_data.sql
 echo "Оригинальная схема Kimball готова."
 
-echo "=== 3. Схема Inmon (3NF) ==="
+echo "=== 4. Схема Inmon (3NF) ==="
 run_sql //sql/create_inmon_ddl.sql
 run_sql //sql/create_inmon_etl.sql
 echo "Схема Inmon 3NF загружена."
 
-echo "=== 4. Схема Data Vault 2.0 ==="
+echo "=== 5. Схема Data Vault 2.0 ==="
 run_sql //sql/dv_ddl.sql
 run_sql //sql/dv_etl.sql
 echo "Схема Data Vault загружена."
