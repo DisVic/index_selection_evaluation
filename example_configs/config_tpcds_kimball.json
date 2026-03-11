@@ -20,7 +20,8 @@
             "name": "extend",
             "parameters": {
                 "budget_MB": [500],
-                "max_index_width": 2
+                "max_index_width": 2,
+                "cost_estimation": "actual_runtimes"
             },
             "timeout": 300
         }
