@@ -79,9 +79,9 @@ class DexterAlgorithm(SelectionAlgorithm):
             
             command = (
                 f'dexter -h localhost -p 5432 -U tpcds -d {database_name}'
-                f' --min-cost-savings-pct {min_percentage}'
-                f' --options "-c search_path={search_path}"'
-                f' .dexter_query.sql'
+                # f' --min-cost-savings-pct {min_percentage}'
+                # f' --options "-c search_path={search_path}"'
+                # f' .dexter_query.sql'
             )
             self.database_connector.commit()
             p = subprocess.Popen(
