@@ -69,17 +69,18 @@ class IndexSelection:
                 self.database_system, self.database_name, config["benchmark_name"]
             )
             self.workload = workload_parser.execute()
-            self.setup_db_connector(self.database_name, self.database_system)
+            self.setup_db_connector(self.database_name, self.database_system, config["benchmark_name"])
+            self.db_connector.enable_simulation()
 
         else:
             # use an integrated benchmark with data and query generation
             dbms_class = DBMSYSTEMS[self.database_system]
-            generating_connector = dbms_class(None, autocommit=True)
+            generating_connector = dbms_class(None, autocommit=True, benchmark_name=config["benchmark_name"])
             table_generator = TableGenerator(
                 config["benchmark_name"], config["scale_factor"], generating_connector
             )
             self.database_name = table_generator.database_name()
-            self.setup_db_connector(self.database_name, self.database_system)
+            self.setup_db_connector(self.database_name, self.database_system, config["benchmark_name"])
 
             if "queries" not in config:
                 config["queries"] = None
@@ -169,7 +170,7 @@ class IndexSelection:
     def _run_algorithm(self, config):
         self.db_connector.drop_indexes()
         self.db_connector.commit()
-        self.setup_db_connector(self.database_name, self.database_system)
+        self.setup_db_connector(self.database_name, self.database_system, config["parameters"]["benchmark_name"])
 
         algorithm = self.create_algorithm_object(config["name"], config["parameters"])
         logging.info(f"Running algorithm {config}")
@@ -205,8 +206,8 @@ class IndexSelection:
             if ".json" in argument:
                 return argument
 
-    def setup_db_connector(self, database_name, database_system):
+    def setup_db_connector(self, database_name, database_system, benchmark_name=None):
         if self.db_connector:
             logging.info("Create new database connector (closing old)")
             self.db_connector.close()
-        self.db_connector = DBMSYSTEMS[database_system](database_name)
+        self.db_connector = DBMSYSTEMS[database_system](database_name, benchmark_name=benchmark_name)

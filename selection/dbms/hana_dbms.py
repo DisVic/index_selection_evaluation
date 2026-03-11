@@ -10,10 +10,11 @@ from selection.database_connector import DatabaseConnector
 
 
 class HanaDatabaseConnector(DatabaseConnector):
-    def __init__(self, db_name, autocommit=False):
+    def __init__(self, db_name, autocommit=False, benchmark_name=None):
         DatabaseConnector.__init__(self, db_name, autocommit=autocommit)
         self.db_system = "hana"
         self._connection = None
+        self.benchmark_name = benchmark_name
 
         # `db_name` is the schema name
         if not self.db_name:

@@ -1,0 +1,28 @@
+{
+    "database_system": "postgres",
+    "benchmark_name": "tpcds_inmon",
+    "database_name": "tpcds",
+    "queries": ["query_1.sql", "query_14.sql", "query_15.sql", "query_19.sql", "query_23.sql", "query_24.sql", "query_27.sql", "query_39.sql", "query_42.sql", "query_46.sql", "query_52.sql", "query_59.sql", "query_67.sql", "query_73.sql", "query_79.sql", "query_86.sql", "query_89.sql", "query_96.sql", "query_98.sql", "query_99.sql"],
+    "algorithms": [
+        {
+            "name": "no_index",
+            "parameters": {},
+            "timeout": 300
+        },
+        {
+            "name": "dexter",
+            "parameters": {
+                "min_saving_percentage": [50]
+            },
+            "timeout": 300
+        },
+        {
+            "name": "extend",
+            "parameters": {
+                "budget_MB": [500],
+                "max_index_width": 2
+            },
+            "timeout": 300
+        }
+    ]
+}

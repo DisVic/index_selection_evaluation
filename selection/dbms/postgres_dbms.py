@@ -7,10 +7,11 @@ from selection.database_connector import DatabaseConnector
 
 
 class PostgresDatabaseConnector(DatabaseConnector):
-    def __init__(self, db_name, autocommit=False):
+    def __init__(self, db_name, autocommit=False, benchmark_name=None):
         DatabaseConnector.__init__(self, db_name, autocommit=autocommit)
         self.db_system = "postgres"
         self._connection = None
+        self.benchmark_name = benchmark_name
 
         if not self.db_name:
             self.db_name = "postgres"
@@ -26,10 +27,24 @@ class PostgresDatabaseConnector(DatabaseConnector):
         self._connection = psycopg2.connect("host=localhost port=5432 user=tpcds password=tpcds_password dbname={}".format(self.db_name))
         self._connection.autocommit = self.autocommit
         self._cursor = self._connection.cursor()
-        self._cursor.execute("SET search_path TO tpcds_inmon, tpcds_dv, public;")
+
+        # Set search_path based on benchmark type
+        if self.benchmark_name:
+            if "inmon" in self.benchmark_name.lower():
+                search_path = "tpcds_inmon, tpcds_dv, public"
+            elif "datavault" in self.benchmark_name.lower() or "dv" in self.benchmark_name.lower():
+                search_path = "tpcds_dv, tpcds_inmon, public"
+            else:
+                # Kimball and other workloads use the original public schema
+                search_path = "public"
+        else:
+            # Default fallback for backward compatibility
+            search_path = "tpcds_inmon, tpcds_dv, public"
+
+        self._cursor.execute("SET search_path TO {};".format(search_path))
 
     def enable_simulation(self):
-        self.exec_only("create extension hypopg")
+        self.exec_only("create extension if not exists hypopg")
         self.commit()
 
     def database_names(self):
