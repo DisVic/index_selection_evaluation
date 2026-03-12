@@ -12,7 +12,7 @@
         {
             "name": "dexter",
             "parameters": {
-                "min_saving_percentage": [50]
+                "min_saving_percentage": [10, 25, 50]
             },
             "timeout": 300
         },
@@ -23,6 +23,11 @@
                 "max_index_width": 2
             },
             "timeout": 300
-        }
+        },
+        {"name": "db2advis", "parameters": {"budget_MB": [500], "max_index_width": 2, "try_variations_seconds": 10}, "timeout": 300},
+        {"name": "auto_admin", "parameters": {"budget_MB": [500], "max_index_width": 2}, "timeout": 300},
+        {"name": "drop", "parameters": {"budget_MB": [500]}, "timeout": 300},
+        {"name": "relaxation", "parameters": {"budget_MB": [500]}, "timeout": 300},
+        {"name": "anytime", "parameters": {"budget_MB": [500], "max_index_width": 2, "max_runtime_minutes": 4}, "timeout": 300}
     ]
 }

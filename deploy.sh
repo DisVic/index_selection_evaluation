@@ -49,7 +49,7 @@ echo "=== 1. Инициализация подмодулей ==="
 git submodule update --init --recursive
 
 echo "=== 2. Запуск инфраструктуры PostgreSQL ==="
-docker-compose up -d
+docker compose up -d
 wait_for_pg
 
 echo "=== 3. Схема Kimball (Базовая) ==="
